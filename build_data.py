@@ -31,9 +31,15 @@ CAP_MANUAL = {
     'PS': ('Ramallah', 31.9038, 35.2034),
     'SS': ('Juba', 4.8594, 31.5713),
 }
-# Erzwungene Hauptstadt (NE liefert eine andere der Mehrfach-Hauptstaedte)
+# Erzwungene Hauptstadt (Name + Koordinaten) – korrigiert veraltete/falsche NE-Angaben
 CAP_FORCE = {
-    'ZA': ('Pretoria', -25.7069, 28.2294),   # statt Bloemfontein (Justiz-HS)
+    'ZA': ('Pretoria', -25.7069, 28.2294),        # statt Bloemfontein (Justiz-HS)
+    'KZ': ('Astana', 51.1605, 71.4704),           # 2022 von Nur-Sultan zurueckbenannt
+    'BI': ('Gitega', -3.4271, 29.9246),           # Hauptstadt seit 2019 (statt Bujumbura)
+    'TZ': ('Dodoma', -6.1630, 35.7516),           # offizielle Hauptstadt (statt Dar es Salaam)
+    'PW': ('Ngerulmud', 7.5006, 134.6242),        # Hauptstadt seit 2006 (statt Melekeok)
+    'BJ': ('Porto-Novo', 6.4969, 2.6289),         # offizielle Hauptstadt (statt Cotonou)
+    'AD': ('Andorra la Vella', 42.5063, 1.5218),  # voller Name
 }
 
 # Deutsche Hauptstadt-Namen (Exonyme), Schluessel = englischer NE-Name
@@ -50,9 +56,11 @@ CAP_DE = {
     'Bishkek': 'Bischkek', 'Dushanbe': 'Duschanbe', 'Ashgabat': 'Aschgabat', 'Yerevan': 'Eriwan',
     'Tbilisi': 'Tiflis', 'Muscat': 'Maskat', 'Kuwait City': 'Kuwait-Stadt', 'Addis Ababa': 'Addis Abeba',
     'Windhoek': 'Windhuk', 'Khartoum': 'Khartum', 'Djibouti': 'Dschibuti', 'Mogadishu': 'Mogadischu',
+    'Bogota': 'Bogotá', 'Ulaanbaatar': 'Ulan-Bator',
 }
 # Deutsche Laendernamen-Praeferenzen (kuerzer/gebraeuchlicher als mledoze)
-NAME_DE = {'US': 'USA', 'CD': 'DR Kongo', 'CG': 'Kongo', 'GB': 'Vereinigtes Königreich'}
+NAME_DE = {'US': 'USA', 'CD': 'DR Kongo', 'CG': 'Kongo', 'GB': 'Vereinigtes Königreich',
+           'CI': 'Elfenbeinküste'}
 
 # Hauptstadt-Zeitzone fuer Mehrzonen-Laender
 TZ_OVERRIDE = {

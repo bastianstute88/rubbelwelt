@@ -38,8 +38,8 @@ const flagShown = {};     // iso -> true (Flaggenbild schon erzeugt)
 
 /* ---------- Init ---------- */
 Promise.all([
-  fetch('data/countries.json').then(r => r.json()),
-  fetch('data/countries-50m.json').then(r => r.json())
+  fetch('data/countries.json?v=3').then(r => r.json()),
+  fetch('data/countries-50m.json?v=3').then(r => r.json())
 ]).then(([countries, topo]) => {
   COUNTRIES = countries;
   COUNTRIES.forEach(c => { byIso[c.iso2] = c; byNum[c.num] = c; });

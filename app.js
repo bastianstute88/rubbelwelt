@@ -42,9 +42,9 @@ const flagShown = {};     // iso -> true (Flaggenbild schon erzeugt)
 
 /* ---------- Init ---------- */
 Promise.all([
-  fetch('data/countries.json?v=6').then(r => r.json()),
-  fetch('data/countries-50m.json?v=6').then(r => r.json()),
-  fetch('data/territories.json?v=6').then(r => r.json())
+  fetch('data/countries.json?v=7').then(r => r.json()),
+  fetch('data/countries-50m.json?v=7').then(r => r.json()),
+  fetch('data/territories.json?v=7').then(r => r.json())
 ]).then(([countries, topo, territories]) => {
   COUNTRIES = countries;
   TERRITORIES = territories;
@@ -81,8 +81,9 @@ Promise.all([
 
   // Abtrünnige/umstrittene Gebiete ihrem Land zuschlagen (verschmelzen), damit sie
   // beim Freirubbeln des Landes mit-freigeschaltet werden und kein Fleck bleibt.
-  const MERGE = { 'Somaliland': 'so', 'N. Cyprus': 'cy', 'W. Sahara': 'ma',
-    'Siachen Glacier': 'in', 'Indian Ocean Ter.': 'au' };
+  // Nur zusammenhängende Gebiete verschmelzen (KEINE fernen Inseln – die würden die
+  // Bounding-Box aufblähen und die Flaggen-Einpassung verzerren, z. B. Australien).
+  const MERGE = { 'Somaliland': 'so', 'N. Cyprus': 'cy', 'W. Sahara': 'ma', 'Siachen Glacier': 'in' };
   const otherKept = [];
   rest.forEach(f => {
     const piso = MERGE[f.properties && f.properties.name];

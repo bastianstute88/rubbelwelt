@@ -1,0 +1,5 @@
+# lokale Rohdaten (nur für build_data.py, nicht fürs Deploy nötig)
+dr5hn.json
+mledoze.json
+zone1970.tab
+.DS_Store

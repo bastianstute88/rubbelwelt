@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0b1622">
+<title>Rubbelwelt – eure Weltkarte</title>
+<link rel="preconnect" href="https://flagcdn.com" crossorigin>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div id="app">
+
+  <header id="topbar">
+    <div class="brand">🌍<span>Rubbelwelt</span></div>
+
+    <div class="hero">
+      <div class="pct"><span id="pct-num">0</span><small>%</small></div>
+      <div class="hero-sub">der Welt gesehen</div>
+      <div class="bar"><div class="bar-fill" id="bar-fill"></div></div>
+      <div class="counts">
+        <span class="chip" id="chip-countries">🗺️ <b id="c-countries">0</b> / 195 Länder</span>
+        <span class="chip" id="chip-capitals">🚩 <b id="c-capitals">0</b> / 195 Hauptstädte</span>
+      </div>
+    </div>
+
+    <button id="btn-sync" class="icon-btn" title="Geräte-Sync">☁️</button>
+  </header>
+
+  <main id="map-wrap">
+    <svg id="map" xmlns="http://www.w3.org/2000/svg"></svg>
+
+    <div class="map-ctrl">
+      <button data-zoom="in" aria-label="Reinzoomen">+</button>
+      <button data-zoom="out" aria-label="Rauszoomen">−</button>
+      <button data-zoom="reset" aria-label="Ganze Welt">⤢</button>
+    </div>
+
+    <div id="hint">Ein Land <b>~1,5 Sek. gedrückt halten</b>, um es freizuschalten</div>
+    <div id="loading">Weltkarte wird geladen…</div>
+  </main>
+
+  <section id="flagbar">
+    <div class="flagbar-head">
+      <input id="search" type="search" placeholder="Land suchen…" autocomplete="off">
+      <div class="seg">
+        <button data-filter="all" class="active">Alle</button>
+        <button data-filter="visited">Besucht</button>
+        <button data-filter="open">Offen</button>
+      </div>
+    </div>
+    <div id="flag-grid"></div>
+  </section>
+
+  <div id="detail" class="hidden" aria-hidden="true">
+    <div class="detail-card">
+      <button id="detail-close" class="icon-btn detail-close" aria-label="Schließen">✕</button>
+      <div class="detail-flag"><img id="d-flag" alt=""></div>
+      <div class="detail-body">
+        <h2 id="d-name">–</h2>
+        <div id="d-region" class="d-region"></div>
+
+        <div class="d-time">
+          <div class="d-clock" id="d-clock">–:–</div>
+          <div class="d-offset" id="d-offset"></div>
+          <div class="d-cap" id="d-cap"></div>
+        </div>
+
+        <div class="d-actions">
+          <button id="d-visit" class="btn btn-visit">Land besucht</button>
+          <button id="d-capital" class="btn btn-capital">Hauptstadt gesehen</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/topojson-client@3.1.0/dist/topojson-client.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="config.js"></script>
+<script src="sync.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

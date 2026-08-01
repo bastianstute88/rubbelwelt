@@ -48,8 +48,13 @@ Promise.all([
   const otherFeatures = [];
   fc.features.forEach(f => {
     const c = byNum[+f.id];
-    if (c) features[c.iso2] = f;
-    else otherFeatures.push(f);
+    if (c) {
+      // Natural Earth vergibt dieselbe ID teils mehrfach (Festland + winzige Außeninseln,
+      // z. B. Australien + "Ashmore and Cartier Is."). Immer die größte Fläche behalten.
+      const area = d3.geoArea(f);
+      const cur = features[c.iso2];
+      if (!cur || area > cur.__area) { f.__area = area; features[c.iso2] = f; }
+    } else otherFeatures.push(f);
   });
   window.__other = otherFeatures;
 
@@ -135,7 +140,7 @@ function render() {
     borderEl[c.iso2] = border;
     attachPress(cover, c.iso2);
     if (state.visited[c.iso2]) applyVisitedVisual(c.iso2, false);
-    if (state.capitals[c.iso2]) drawPole(c.iso2);
+    if (state.capitals[c.iso2]) drawCapital(c.iso2);
   });
 }
 
@@ -173,20 +178,16 @@ function removeVisitedVisual(iso) {
   flagShown[iso] = false;
 }
 
-/* ---------- Fahnenmast bei Hauptstadt ---------- */
-function drawPole(iso) {
-  const f = features[iso]; if (!f) return;
-  const c = path.centroid(f);
-  if (!c || isNaN(c[0])) return;
-  const g = gPoles.append('g').attr('class', 'pole').attr('data-iso', iso)
-    .attr('transform', `translate(${c[0]},${c[1]})`);
-  g.append('line').attr('x1', 0).attr('y1', 2).attr('x2', 0).attr('y2', -15);
-  g.append('circle').attr('class', 'knob').attr('cx', 0).attr('cy', -15).attr('r', 1.6);
-  g.append('image').attr('class', 'flag').attr('href', FLAG(iso))
-    .attr('x', 0).attr('y', -15).attr('width', 11).attr('height', 7)
-    .attr('preserveAspectRatio', 'xMidYMid slice');
+/* ---------- Dezenter Hauptstadt-Marker (goldener Punkt an der echten Hauptstadt) ---------- */
+function drawCapital(iso) {
+  const c = byIso[iso]; if (!c || c.clat == null || !projection) return;
+  const p = projection([c.clng, c.clat]); if (!p || isNaN(p[0])) return;
+  const g = gPoles.append('g').attr('class', 'capmark').attr('data-iso', iso)
+    .attr('transform', `translate(${p[0]},${p[1]})`);
+  g.append('circle').attr('class', 'halo').attr('r', 4);
+  g.append('circle').attr('class', 'dot').attr('r', 1.8);
 }
-function removePole(iso) { gPoles.selectAll('.pole').filter(function () { return this.getAttribute('data-iso') === iso; }).remove(); }
+function removeCapital(iso) { gPoles.selectAll('.capmark').filter(function () { return this.getAttribute('data-iso') === iso; }).remove(); }
 
 /* ---------- Toggles ---------- */
 function setVisited(iso, on, animate) {
@@ -195,8 +196,8 @@ function setVisited(iso, on, animate) {
   save(); refreshCounters(); syncGridCell(iso); syncDetail(iso);
 }
 function setCapital(iso, on) {
-  if (on) { state.capitals[iso] = true; if (!state.visited[iso]) { state.visited[iso] = true; applyVisitedVisual(iso, true); } drawPole(iso); }
-  else { delete state.capitals[iso]; removePole(iso); }
+  if (on) { state.capitals[iso] = true; if (!state.visited[iso]) { state.visited[iso] = true; applyVisitedVisual(iso, true); } drawCapital(iso); }
+  else { delete state.capitals[iso]; removeCapital(iso); }
   save(); refreshCounters(); syncGridCell(iso); syncDetail(iso);
 }
 

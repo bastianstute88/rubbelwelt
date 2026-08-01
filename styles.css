@@ -70,10 +70,10 @@ body{
 #press-ring .prog{fill:none; stroke:var(--gold); stroke-width:5; stroke-linecap:round;
   stroke-dasharray:176; stroke-dashoffset:176}
 
-/* Fahnenmast */
-.pole line{stroke:#cfd6de; stroke-width:1.4; vector-effect:non-scaling-stroke}
-.pole .flag{filter:drop-shadow(0 1px 1px rgba(0,0,0,.5))}
-.pole .knob{fill:var(--gold)}
+/* Dezenter Hauptstadt-Marker */
+.capmark{pointer-events:none}
+.capmark .halo{fill:var(--cap); opacity:.25}
+.capmark .dot{fill:var(--cap); stroke:#2a1e04; stroke-width:.4; vector-effect:non-scaling-stroke}
 
 .map-ctrl{position:absolute; right:12px; bottom:12px; display:flex; flex-direction:column; gap:6px; z-index:5}
 .map-ctrl button{width:38px; height:38px; border-radius:10px; border:1px solid #26384c;

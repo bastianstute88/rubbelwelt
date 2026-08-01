@@ -19,8 +19,12 @@ function save() {
 }
 
 /* ---------- Daten ---------- */
-let COUNTRIES = [];       // Array
-let byIso = {};           // iso -> country
+let COUNTRIES = [];       // die 195 UN-Länder
+let TERRITORIES = [];     // Extra-Gebiete (Taiwan, Kosovo … – zählen separat)
+let ALL = [];             // beide zusammen
+let COUNTRY_SET = new Set();
+let TERR_SET = new Set();
+let byIso = {};           // iso -> eintrag
 let byNum = {};           // num -> country
 let features = {};        // iso -> GeoJSON feature (nur unsere 195)
 const LOCAL_TZ = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -38,11 +42,18 @@ const flagShown = {};     // iso -> true (Flaggenbild schon erzeugt)
 
 /* ---------- Init ---------- */
 Promise.all([
-  fetch('data/countries.json?v=5').then(r => r.json()),
-  fetch('data/countries-50m.json?v=5').then(r => r.json())
-]).then(([countries, topo]) => {
+  fetch('data/countries.json?v=6').then(r => r.json()),
+  fetch('data/countries-50m.json?v=6').then(r => r.json()),
+  fetch('data/territories.json?v=6').then(r => r.json())
+]).then(([countries, topo, territories]) => {
   COUNTRIES = countries;
-  COUNTRIES.forEach(c => { byIso[c.iso2] = c; byNum[c.num] = c; });
+  TERRITORIES = territories;
+  ALL = COUNTRIES.concat(TERRITORIES);
+  COUNTRY_SET = new Set(COUNTRIES.map(c => c.iso2));
+  TERR_SET = new Set(TERRITORIES.map(c => c.iso2));
+  ALL.forEach(c => { byIso[c.iso2] = c; if (c.num) byNum[c.num] = c; });
+  const terrByFeat = {};
+  TERRITORIES.forEach(t => { terrByFeat[t.feat] = t; });
 
   const fc = topojson.feature(topo, topo.objects.countries);
   const otherFeatures = [];
@@ -57,12 +68,23 @@ Promise.all([
     } else otherFeatures.push(f);
   });
 
+  // Extra-Gebiete (Taiwan, Kosovo …) über den Natural-Earth-Namen zuordnen -> freirubbelbar
+  const rest = [];
+  otherFeatures.forEach(f => {
+    const t = terrByFeat[f.properties && f.properties.name];
+    if (t) {
+      const area = d3.geoArea(f);
+      const cur = features[t.iso2];
+      if (!cur || area > cur.__area) { f.__area = area; features[t.iso2] = f; }
+    } else rest.push(f);
+  });
+
   // Abtrünnige/umstrittene Gebiete ihrem Land zuschlagen (verschmelzen), damit sie
   // beim Freirubbeln des Landes mit-freigeschaltet werden und kein Fleck bleibt.
   const MERGE = { 'Somaliland': 'so', 'N. Cyprus': 'cy', 'W. Sahara': 'ma',
     'Siachen Glacier': 'in', 'Indian Ocean Ter.': 'au' };
   const otherKept = [];
-  otherFeatures.forEach(f => {
+  rest.forEach(f => {
     const piso = MERGE[f.properties && f.properties.name];
     const parent = piso && features[piso];
     if (parent) {
@@ -144,8 +166,8 @@ function render() {
   // Territorien (keine Länder in unserer 195er-Liste)
   (window.__other || []).forEach(f => gOther.append('path').attr('class', 'other-land').attr('d', path(f)));
 
-  // Unsere Länder: Grau-Cover + Rand
-  COUNTRIES.forEach(c => {
+  // Länder + Extra-Gebiete: Grau-Cover + Rand
+  ALL.forEach(c => {
     const f = features[c.iso2]; if (!f) return;
     const d = path(f);
     const cover = gCovers.append('path').attr('class', 'cover').attr('d', d)
@@ -322,7 +344,7 @@ function syncDetail(iso) {
   if (detailIso !== iso) return;
   const v = document.getElementById('d-visit'), cap = document.getElementById('d-capital');
   v.classList.toggle('on', !!state.visited[iso]);
-  v.textContent = state.visited[iso] ? 'Land besucht' : 'Land besucht';
+  v.textContent = (byIso[iso] && byIso[iso].terr) ? 'Gebiet besucht' : 'Land besucht';
   cap.classList.toggle('on', !!state.capitals[iso]);
 }
 function updateClock() {
@@ -357,25 +379,33 @@ document.getElementById('d-capital').addEventListener('click', () => detailIso &
 const grid = document.getElementById('flag-grid');
 const cellEl = {};
 function buildGrid() {
-  COUNTRIES.forEach(c => {
-    const cell = document.createElement('div');
-    cell.className = 'flag-cell';
-    cell.dataset.iso = c.iso2; cell.dataset.name = c.name.toLowerCase();
-    cell.innerHTML =
-      `<img loading="lazy" src="${FLAG(c.iso2, 'w80')}" alt="${c.name}">` +
-      `<span>${c.name}</span><i class="cap-dot"></i>`;
-    cell.addEventListener('click', () => { flyTo(c.iso2, 3.6); openDetail(c.iso2); });
-    grid.appendChild(cell);
-    cellEl[c.iso2] = cell;
-  });
+  COUNTRIES.forEach(c => addCell(c, false));
+  if (TERRITORIES.length) {
+    const sec = document.createElement('div');
+    sec.className = 'grid-section'; sec.id = 'grid-section-terr';
+    sec.textContent = '✨ Extra-Gebiete (zählen separat)';
+    grid.appendChild(sec);
+    TERRITORIES.forEach(c => addCell(c, true));
+  }
   syncAllGrid();
+}
+function addCell(c, terr) {
+  const cell = document.createElement('div');
+  cell.className = 'flag-cell' + (terr ? ' terr' : '');
+  cell.dataset.iso = c.iso2; cell.dataset.name = c.name.toLowerCase();
+  cell.innerHTML =
+    `<img loading="lazy" src="${FLAG(c.iso2, 'w80')}" alt="${c.name}">` +
+    `<span>${c.name}</span><i class="cap-dot"></i>`;
+  cell.addEventListener('click', () => { flyTo(c.iso2, 3.6); openDetail(c.iso2); });
+  grid.appendChild(cell);
+  cellEl[c.iso2] = cell;
 }
 function syncGridCell(iso) {
   const cell = cellEl[iso]; if (!cell) return;
   cell.classList.toggle('on', !!state.visited[iso]);
   cell.classList.toggle('cap', !!state.capitals[iso]);
 }
-function syncAllGrid() { COUNTRIES.forEach(c => syncGridCell(c.iso2)); }
+function syncAllGrid() { ALL.forEach(c => syncGridCell(c.iso2)); }
 
 // Suche + Filter
 let curFilter = 'all', curQuery = '';
@@ -386,24 +416,32 @@ document.querySelector('.seg').addEventListener('click', (e) => {
   b.classList.add('active'); curFilter = b.dataset.filter; applyGridFilter();
 });
 function applyGridFilter() {
-  COUNTRIES.forEach(c => {
+  let terrVisible = 0;
+  ALL.forEach(c => {
     const cell = cellEl[c.iso2];
     const matchQ = !curQuery || c.name.toLowerCase().includes(curQuery);
     const vis = !!state.visited[c.iso2];
     const matchF = curFilter === 'all' || (curFilter === 'visited' && vis) || (curFilter === 'open' && !vis);
-    cell.style.display = (matchQ && matchF) ? '' : 'none';
+    const show = matchQ && matchF;
+    cell.style.display = show ? '' : 'none';
+    if (show && c.terr) terrVisible++;
   });
+  const sec = document.getElementById('grid-section-terr');
+  if (sec) sec.style.display = terrVisible ? '' : 'none';
 }
 
 /* ---------- Zähler ---------- */
 function refreshCounters() {
-  const nc = Object.keys(state.visited).length;
-  const ncap = Object.keys(state.capitals).length;
+  const nc = Object.keys(state.visited).filter(i => COUNTRY_SET.has(i)).length;   // nur die 195
+  const ncap = Object.keys(state.capitals).filter(i => COUNTRY_SET.has(i)).length;
+  const nterr = Object.keys(state.visited).filter(i => TERR_SET.has(i)).length;   // Extra-Gebiete separat
   const pct = (nc / TOTAL * 100);
   document.getElementById('pct-num').textContent = pct === 0 ? '0' : pct.toFixed(1).replace('.', ',');
   document.getElementById('bar-fill').style.width = pct + '%';
   document.getElementById('c-countries').textContent = nc;
   document.getElementById('c-capitals').textContent = ncap;
+  const ex = document.getElementById('chip-extra');
+  if (ex) { ex.style.display = nterr > 0 ? '' : 'none'; document.getElementById('c-extra').textContent = nterr; }
 }
 
 /* ---------- Helpers ---------- */

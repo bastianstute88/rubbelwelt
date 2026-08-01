@@ -37,4 +37,7 @@ create table if not exists boards (
 );
 alter table boards enable row level security;
 create policy "anon_all" on boards for all to anon using (true) with check (true);
+
+-- Live-Aktualisierung zwischen Geräten (Realtime):
+alter publication supabase_realtime add table boards;
 ```

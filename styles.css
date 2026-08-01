@@ -1,7 +1,7 @@
 :root{
   --ocean-1:#0b1622; --ocean-2:#0e1f30;
   --land:#39434f;           /* graues, "verrubbeltes" Land */
-  --other:#232c37;          /* Territorien/Nicht-Länder */
+  --other:#333c47;          /* Territorien/Nicht-Länder (dezent, nah am Land-Grau) */
   --border:#5a6675;
   --gold:#e8c37e; --gold-d:#c99a4f;
   --teal:#4fd1c5;

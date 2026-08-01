@@ -38,8 +38,8 @@ const flagShown = {};     // iso -> true (Flaggenbild schon erzeugt)
 
 /* ---------- Init ---------- */
 Promise.all([
-  fetch('data/countries.json?v=4').then(r => r.json()),
-  fetch('data/countries-50m.json?v=4').then(r => r.json())
+  fetch('data/countries.json?v=5').then(r => r.json()),
+  fetch('data/countries-50m.json?v=5').then(r => r.json())
 ]).then(([countries, topo]) => {
   COUNTRIES = countries;
   COUNTRIES.forEach(c => { byIso[c.iso2] = c; byNum[c.num] = c; });
@@ -56,7 +56,22 @@ Promise.all([
       if (!cur || area > cur.__area) { f.__area = area; features[c.iso2] = f; }
     } else otherFeatures.push(f);
   });
-  window.__other = otherFeatures;
+
+  // Abtrünnige/umstrittene Gebiete ihrem Land zuschlagen (verschmelzen), damit sie
+  // beim Freirubbeln des Landes mit-freigeschaltet werden und kein Fleck bleibt.
+  const MERGE = { 'Somaliland': 'so', 'N. Cyprus': 'cy', 'W. Sahara': 'ma',
+    'Siachen Glacier': 'in', 'Indian Ocean Ter.': 'au' };
+  const otherKept = [];
+  otherFeatures.forEach(f => {
+    const piso = MERGE[f.properties && f.properties.name];
+    const parent = piso && features[piso];
+    if (parent) {
+      const pp = parent.geometry.type === 'Polygon' ? [parent.geometry.coordinates] : parent.geometry.coordinates;
+      const ep = f.geometry.type === 'Polygon' ? [f.geometry.coordinates] : f.geometry.coordinates;
+      parent.geometry = { type: 'MultiPolygon', coordinates: pp.concat(ep) };
+    } else otherKept.push(f);
+  });
+  window.__other = otherKept;
 
   buildGrid();
   setupSvg();

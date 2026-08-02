@@ -101,7 +101,8 @@ Die Karten-Assets sind mit `?v=N` versioniert; die Nummer entspricht den Einträ
 
 | Version | Datum | Änderungen |
 |--------:|-------|------------|
-| **v13** | 2026-08-02 | **UNESCO-Welterbe** (1121 Stätten): abhakbare Liste pro Land im Detail-Fenster, Karten-Marker grau→golden ab Zoom, eigener Zähler, im Sync. |
+| **v14** | 2026-08-02 | Welterbe-Namen **komplett auf Deutsch** (966 aus Wikidata über die offizielle WHS-Nummer, 155 manuell) · Karte zeigt Welterbe nur noch **als gesehene goldene Trophäen** (kein grauer Punkte-Brei). |
+| **v13** | 2026-08-02 | **UNESCO-Welterbe** (1121 Stätten): abhakbare Liste pro Land im Detail-Fenster, Karten-Marker, eigener Zähler, im Sync. |
 | **v12** | 2026-08-02 | **Kartenform-Umschalter** 🗺️/🌐: Globus (Natural Earth) ↔ flache Karte (Equirectangular, volle Breite). Wahl pro Gerät gespeichert. |
 | **v11** | 2026-08-02 | Hauptstadt-Punkte **dezenter** (kleiner, blasserer Rand); besuchte bleiben golden hervorgehoben. |
 | **v10** | 2026-08-02 | Französische **Übersee-Départements** (Guayana, Guadeloupe, Martinique, Réunion, Mayotte) als eigene Extra-Gebiete abgetrennt · Extra-Gebiete **alphabetisch** sortiert · **Hauptstädte dauerhaft** als Punkt (dunkel → golden bei Besuch). |

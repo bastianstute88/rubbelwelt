@@ -10,7 +10,7 @@ const LS_KEY = 'rubbelwelt_v1';
 const FLAG = (iso, size) => `https://flagcdn.com/${size ? size + '/' : ''}${iso}${size ? '.png' : '.svg'}`;
 
 /* ---------- State ---------- */
-let state = { visited: {}, capitals: {} };
+let state = { visited: {}, capitals: {}, heritage: {} };
 try { const s = JSON.parse(localStorage.getItem(LS_KEY)); if (s) state = Object.assign(state, s); } catch (e) {}
 
 function save() {
@@ -27,6 +27,10 @@ let TERR_SET = new Set();
 let byIso = {};           // iso -> eintrag
 let byNum = {};           // num -> country
 let features = {};        // iso -> GeoJSON feature (nur unsere 195)
+let HERITAGE = [];        // UNESCO-Welterbestätten
+let heritageById = {};    // id -> stätte
+let heritageByIso = {};   // iso -> [stätten]
+const HERITAGE_ZOOM = 2.6;// ab diesem Zoom werden die Welterbe-Marker eingeblendet
 const LOCAL_TZ = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
 /* ---------- SVG / D3 ---------- */
@@ -34,7 +38,7 @@ const svgEl = document.getElementById('map');
 const wrap = document.getElementById('map-wrap');
 const svg = d3.select(svgEl);
 let W = 0, H = 0, projection, path, zoom, viewport;
-let gOcean, gGrat, gOther, gFlags, gCovers, gBorders, gPoles, defs;
+let gOcean, gGrat, gOther, gFlags, gCovers, gBorders, gHeritage, gPoles, defs;
 let curK = 1;
 let flatMode = localStorage.getItem('rw_flat') === '1';   // flache Karte statt Globus-Look
 const coverEl = {};       // iso -> <path.cover>
@@ -43,13 +47,19 @@ const flagShown = {};     // iso -> true (Flaggenbild schon erzeugt)
 
 /* ---------- Init ---------- */
 Promise.all([
-  fetch('data/countries.json?v=12').then(r => r.json()),
-  fetch('data/countries-50m.json?v=12').then(r => r.json()),
-  fetch('data/territories.json?v=12').then(r => r.json())
-]).then(([countries, topo, territories]) => {
+  fetch('data/countries.json?v=13').then(r => r.json()),
+  fetch('data/countries-50m.json?v=13').then(r => r.json()),
+  fetch('data/territories.json?v=13').then(r => r.json()),
+  fetch('data/heritage.json?v=13').then(r => r.json())
+]).then(([countries, topo, territories, heritage]) => {
   COUNTRIES = countries;
   TERRITORIES = territories.sort((a, b) => a.name.localeCompare(b.name, 'de'));  // Extra-Gebiete alphabetisch
   ALL = COUNTRIES.concat(TERRITORIES);
+  HERITAGE = heritage;
+  HERITAGE.forEach(h => {
+    heritageById[h.id] = h;
+    h.iso.forEach(code => { (heritageByIso[code] = heritageByIso[code] || []).push(h); });
+  });
   COUNTRY_SET = new Set(COUNTRIES.map(c => c.iso2));
   TERR_SET = new Set(TERRITORIES.map(c => c.iso2));
   ALL.forEach(c => { byIso[c.iso2] = c; if (c.num) byNum[c.num] = c; });
@@ -139,6 +149,7 @@ function setupSvg() {
   gFlags   = viewport.append('g');
   gCovers  = viewport.append('g');
   gBorders = viewport.append('g');
+  gHeritage = viewport.append('g').style('display', 'none');  // Welterbe-Marker (erst ab Zoom)
   gPoles   = viewport.append('g');
 
   zoom = d3.zoom().scaleExtent([1, 14])
@@ -146,6 +157,7 @@ function setupSvg() {
       viewport.attr('transform', e.transform); curK = e.transform.k;
       // Hauptstadt-Punkte gegen-skalieren -> konstante Bildschirmgröße statt Riesenblasen
       gPoles.selectAll('.capmark').attr('transform', d => `translate(${d.x},${d.y}) scale(${1 / curK})`);
+      gHeritage.style('display', curK >= HERITAGE_ZOOM ? null : 'none');  // Welterbe erst beim Reinzoomen
     })
     .on('start', () => svgEl.classList.add('grabbing'))
     .on('end', () => svgEl.classList.remove('grabbing'));
@@ -196,7 +208,7 @@ function resize() {
 /* ---------- Karte zeichnen ---------- */
 function render() {
   resize();
-  [gOcean, gGrat, gOther, gFlags, gCovers, gBorders, gPoles].forEach(g => g.selectAll('*').remove());
+  [gOcean, gGrat, gOther, gFlags, gCovers, gBorders, gHeritage, gPoles].forEach(g => g.selectAll('*').remove());
   Object.keys(coverEl).forEach(k => delete coverEl[k]);
   Object.keys(borderEl).forEach(k => delete borderEl[k]);
   Object.keys(flagShown).forEach(k => delete flagShown[k]);
@@ -223,6 +235,15 @@ function render() {
     attachPress(cover, c.iso2);
     if (state.visited[c.iso2]) applyVisitedVisual(c.iso2, false);
     drawCapMarker(c.iso2);   // Hauptstadt-Punkt immer (dunkel, golden wenn besucht)
+  });
+
+  // Welterbe-Marker (grau, golden wenn gesehen) – nur ab Zoom sichtbar
+  gHeritage.style('display', curK >= HERITAGE_ZOOM ? null : 'none');
+  HERITAGE.forEach(h => {
+    const p = projection([h.lng, h.lat]); if (!p || isNaN(p[0])) return;
+    gHeritage.append('circle')
+      .attr('class', 'hmark' + (state.heritage[h.id] ? ' seen' : ''))
+      .attr('data-hid', h.id).attr('cx', p[0]).attr('cy', p[1]).attr('r', 0.7);
   });
 }
 
@@ -388,6 +409,7 @@ function openDetail(iso) {
   document.getElementById('d-region').textContent = c.region || '';
   document.getElementById('d-cap').innerHTML = c.capital ? `Hauptstadt: <b>${c.capital}</b>` : '';
   syncDetail(iso);
+  buildHeritageList(iso);
   updateClock();
   clearInterval(clockTimer); clockTimer = setInterval(updateClock, 1000);
   detail.classList.remove('hidden'); detail.setAttribute('aria-hidden', 'false');
@@ -430,6 +452,38 @@ document.getElementById('detail-close').addEventListener('click', closeDetail);
 detail.addEventListener('click', (e) => { if (e.target === detail) closeDetail(); });
 document.getElementById('d-visit').addEventListener('click', () => detailIso && setVisited(detailIso, !state.visited[detailIso], true));
 document.getElementById('d-capital').addEventListener('click', () => detailIso && setCapital(detailIso, !state.capitals[detailIso]));
+
+/* ---------- Welterbe-Liste pro Land ---------- */
+function escapeHtml(s) { return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+function whCatIcon(cat) { return cat === 'N' ? '🌿' : cat === 'M' ? '🏞️' : '🏛️'; }
+function buildHeritageList(iso) {
+  const box = document.getElementById('d-heritage'), list = document.getElementById('wh-list');
+  const sites = (heritageByIso[iso] || []).slice().sort((a, b) => a.name.localeCompare(b.name, 'de'));
+  if (!sites.length) { box.classList.add('hidden'); list.innerHTML = ''; return; }
+  box.classList.remove('hidden');
+  updateWhCount(iso);
+  list.innerHTML = sites.map(s =>
+    `<div class="wh-row${state.heritage[s.id] ? ' on' : ''}" data-hid="${s.id}">` +
+    `<span class="wh-check"></span><span class="wh-cat">${whCatIcon(s.cat)}</span>` +
+    `<span class="wh-name">${escapeHtml(s.name)}</span></div>`).join('');
+}
+function updateWhCount(iso) {
+  const sites = heritageByIso[iso] || [];
+  const seen = sites.filter(s => state.heritage[s.id]).length;
+  const el = document.getElementById('wh-count'); if (el) el.textContent = `${seen} / ${sites.length} gesehen`;
+}
+function toggleHeritage(id) {
+  if (state.heritage[id]) delete state.heritage[id]; else state.heritage[id] = true;
+  const on = !!state.heritage[id];
+  const row = document.querySelector('#wh-list .wh-row[data-hid="' + id + '"]');
+  if (row) row.classList.toggle('on', on);
+  gHeritage.selectAll('.hmark').filter(function () { return this.getAttribute('data-hid') === id; }).classed('seen', on);
+  if (detailIso) updateWhCount(detailIso);
+  save(); refreshCounters();
+}
+document.getElementById('wh-list').addEventListener('click', (e) => {
+  const row = e.target.closest('.wh-row'); if (row) toggleHeritage(row.dataset.hid);
+});
 
 /* ---------- Flaggen-Leiste ---------- */
 const grid = document.getElementById('flag-grid');
@@ -498,6 +552,9 @@ function refreshCounters() {
   document.getElementById('c-capitals').textContent = ncap;
   const ex = document.getElementById('chip-extra');
   if (ex) { ex.style.display = nterr > 0 ? '' : 'none'; document.getElementById('c-extra').textContent = nterr; }
+  const nwh = Object.keys(state.heritage).length;
+  const wc = document.getElementById('chip-wh');
+  if (wc) { wc.style.display = nwh > 0 ? '' : 'none'; document.getElementById('c-wh').textContent = nwh; }
 }
 
 /* ---------- Helpers ---------- */
@@ -520,10 +577,10 @@ window.Rubbel = {
   getState: () => state,
   applyState: (remote) => {
     if (!remote) return;
-    state = { visited: remote.visited || {}, capitals: remote.capitals || {} };
+    state = { visited: remote.visited || {}, capitals: remote.capitals || {}, heritage: remote.heritage || {} };
     localStorage.setItem(LS_KEY, JSON.stringify(state));   // lokal spiegeln, ohne erneuten Push
     if (projection) render();
     refreshCounters(); syncAllGrid();
-    if (detailIso) syncDetail(detailIso);
+    if (detailIso) { syncDetail(detailIso); buildHeritageList(detailIso); }
   }
 };

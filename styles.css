@@ -159,6 +159,27 @@ body{
   font-size:14px; box-shadow:var(--shadow); opacity:0; pointer-events:none; transition:.3s; z-index:30; max-width:88vw; text-align:center}
 #toast.show{opacity:1; transform:translateX(-50%) translateY(0)}
 
+/* ---------- Welterbe-Marker ---------- */
+.hmark{fill:#8a94a3; stroke:#0b1420; stroke-width:.15; vector-effect:non-scaling-stroke; opacity:.65; pointer-events:none}
+.hmark.seen{fill:var(--gold); opacity:1; stroke:#3a2a05}
+
+/* ---------- Welterbe-Liste im Detail ---------- */
+.chip.chip-wh{background:#1d1a10; border-color:#5a4a24; color:#e8dcc0}
+.d-heritage{margin-top:14px; border-top:1px solid #1c2a3a; padding-top:12px}
+.d-heritage.hidden{display:none}
+.wh-head{font-size:13px; color:var(--muted); margin-bottom:8px; display:flex; justify-content:space-between; align-items:baseline; gap:8px}
+.wh-head #wh-count{color:var(--gold); font-weight:700; font-size:12px; white-space:nowrap}
+.wh-list{max-height:34vh; overflow-y:auto; -webkit-overflow-scrolling:touch; display:flex; flex-direction:column; gap:2px; margin:0 -4px; padding:0 4px}
+.wh-row{display:flex; align-items:center; gap:9px; padding:8px; border-radius:9px; cursor:pointer; transition:background .12s}
+.wh-row:hover{background:#0f1c2b}
+.wh-check{flex:none; width:18px; height:18px; border-radius:6px; border:1.5px solid #33465c; background:#0c1826; position:relative; transition:.15s}
+.wh-row.on .wh-check{background:linear-gradient(180deg,var(--gold),var(--gold-d)); border-color:var(--gold)}
+.wh-row.on .wh-check::after{content:"✓"; position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:#241a05; font-size:12px; font-weight:800}
+.wh-cat{flex:none; font-size:13px}
+.wh-name{font-size:13.5px; color:var(--muted); line-height:1.25}
+.wh-row.on .wh-name{color:var(--ink)}
+.detail-card{max-height:92vh; overflow-y:auto}
+
 /* ---------- Modal (Sync) ---------- */
 .modal{position:fixed; inset:0; z-index:40; display:flex; align-items:center; justify-content:center;
   background:rgba(4,9,15,.6); backdrop-filter:blur(3px); padding:20px; transition:opacity .2s}

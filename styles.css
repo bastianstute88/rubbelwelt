@@ -159,9 +159,9 @@ body{
   font-size:14px; box-shadow:var(--shadow); opacity:0; pointer-events:none; transition:.3s; z-index:30; max-width:88vw; text-align:center}
 #toast.show{opacity:1; transform:translateX(-50%) translateY(0)}
 
-/* ---------- Welterbe-Marker ---------- */
-.hmark{fill:#8a94a3; stroke:#0b1420; stroke-width:.15; vector-effect:non-scaling-stroke; opacity:.65; pointer-events:none}
-.hmark.seen{fill:var(--gold); opacity:1; stroke:#3a2a05}
+/* ---------- Welterbe-Marker (nur gesehene, goldene Raute) ---------- */
+.hmark{pointer-events:none}
+.hmark .hdia{fill:var(--gold); stroke:#2a1e04; stroke-width:.4; vector-effect:non-scaling-stroke}
 
 /* ---------- Welterbe-Liste im Detail ---------- */
 .chip.chip-wh{background:#1d1a10; border-color:#5a4a24; color:#e8dcc0}

@@ -30,7 +30,6 @@ let features = {};        // iso -> GeoJSON feature (nur unsere 195)
 let HERITAGE = [];        // UNESCO-Welterbestätten
 let heritageById = {};    // id -> stätte
 let heritageByIso = {};   // iso -> [stätten]
-const HERITAGE_ZOOM = 2.6;// ab diesem Zoom werden die Welterbe-Marker eingeblendet
 const LOCAL_TZ = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
 /* ---------- SVG / D3 ---------- */
@@ -47,10 +46,10 @@ const flagShown = {};     // iso -> true (Flaggenbild schon erzeugt)
 
 /* ---------- Init ---------- */
 Promise.all([
-  fetch('data/countries.json?v=13').then(r => r.json()),
-  fetch('data/countries-50m.json?v=13').then(r => r.json()),
-  fetch('data/territories.json?v=13').then(r => r.json()),
-  fetch('data/heritage.json?v=13').then(r => r.json())
+  fetch('data/countries.json?v=14').then(r => r.json()),
+  fetch('data/countries-50m.json?v=14').then(r => r.json()),
+  fetch('data/territories.json?v=14').then(r => r.json()),
+  fetch('data/heritage.json?v=14').then(r => r.json())
 ]).then(([countries, topo, territories, heritage]) => {
   COUNTRIES = countries;
   TERRITORIES = territories.sort((a, b) => a.name.localeCompare(b.name, 'de'));  // Extra-Gebiete alphabetisch
@@ -149,7 +148,7 @@ function setupSvg() {
   gFlags   = viewport.append('g');
   gCovers  = viewport.append('g');
   gBorders = viewport.append('g');
-  gHeritage = viewport.append('g').style('display', 'none');  // Welterbe-Marker (erst ab Zoom)
+  gHeritage = viewport.append('g');  // Welterbe-Marker (nur gesehene, als goldene Trophäen)
   gPoles   = viewport.append('g');
 
   zoom = d3.zoom().scaleExtent([1, 14])
@@ -157,7 +156,7 @@ function setupSvg() {
       viewport.attr('transform', e.transform); curK = e.transform.k;
       // Hauptstadt-Punkte gegen-skalieren -> konstante Bildschirmgröße statt Riesenblasen
       gPoles.selectAll('.capmark').attr('transform', d => `translate(${d.x},${d.y}) scale(${1 / curK})`);
-      gHeritage.style('display', curK >= HERITAGE_ZOOM ? null : 'none');  // Welterbe erst beim Reinzoomen
+      gHeritage.selectAll('.hmark').attr('transform', d => `translate(${d.x},${d.y}) scale(${1 / curK})`);
     })
     .on('start', () => svgEl.classList.add('grabbing'))
     .on('end', () => svgEl.classList.remove('grabbing'));
@@ -237,14 +236,18 @@ function render() {
     drawCapMarker(c.iso2);   // Hauptstadt-Punkt immer (dunkel, golden wenn besucht)
   });
 
-  // Welterbe-Marker (grau, golden wenn gesehen) – nur ab Zoom sichtbar
-  gHeritage.style('display', curK >= HERITAGE_ZOOM ? null : 'none');
-  HERITAGE.forEach(h => {
-    const p = projection([h.lng, h.lat]); if (!p || isNaN(p[0])) return;
-    gHeritage.append('circle')
-      .attr('class', 'hmark' + (state.heritage[h.id] ? ' seen' : ''))
-      .attr('data-hid', h.id).attr('cx', p[0]).attr('cy', p[1]).attr('r', 0.7);
-  });
+  // Welterbe-Marker: nur die GESEHENEN als goldene Trophäen (kein grauer Punkte-Brei)
+  HERITAGE.forEach(h => { if (state.heritage[h.id]) drawHmark(h); });
+}
+
+function drawHmark(h) {
+  if (!projection) return;
+  const p = projection([h.lng, h.lat]); if (!p || isNaN(p[0])) return;
+  gHeritage.append('g').attr('class', 'hmark').attr('data-hid', h.id)
+    .datum({ x: p[0], y: p[1] })
+    .attr('transform', `translate(${p[0]},${p[1]}) scale(${1 / curK})`)
+    .append('rect').attr('class', 'hdia').attr('x', -1.4).attr('y', -1.4)
+    .attr('width', 2.8).attr('height', 2.8).attr('transform', 'rotate(45)');
 }
 
 /* ---------- Flagge unter dem Land sichtbar machen ----------
@@ -477,7 +480,8 @@ function toggleHeritage(id) {
   const on = !!state.heritage[id];
   const row = document.querySelector('#wh-list .wh-row[data-hid="' + id + '"]');
   if (row) row.classList.toggle('on', on);
-  gHeritage.selectAll('.hmark').filter(function () { return this.getAttribute('data-hid') === id; }).classed('seen', on);
+  if (on) drawHmark(heritageById[id]);
+  else gHeritage.selectAll('.hmark').filter(function () { return this.getAttribute('data-hid') === id; }).remove();
   if (detailIso) updateWhCount(detailIso);
   save(); refreshCounters();
 }

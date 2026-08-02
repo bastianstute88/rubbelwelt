@@ -101,6 +101,8 @@ Die Karten-Assets sind mit `?v=N` versioniert; die Nummer entspricht den Einträ
 
 | Version | Datum | Änderungen |
 |--------:|-------|------------|
+| **v17** | 2026-08-02 | Welterbe in der unteren Suche **durchsuchbar** (Treffer direkt abhakbar, mit Land) · 8 restliche englische Namen übersetzt (u. a. Freiheitsstatue). |
+| **v16** | 2026-08-02 | Fix: **verwaiste Welterbe-Schlüssel** (vom alten ID-Schema) werden automatisch entfernt – Zähler stimmt wieder. |
 | **v15** | 2026-08-02 | **Anklickbare Zähler-Chips**: Übersichts-Fenster pro Kategorie (Länder / Hauptstädte / Extra-Gebiete / Welterbe) mit Sprung zum Land · Fix: Flaggen-Filter „Besucht" scrollt jetzt. |
 | **v14** | 2026-08-02 | Welterbe-Namen **komplett auf Deutsch** (966 aus Wikidata über die offizielle WHS-Nummer, 155 manuell) · Karte zeigt Welterbe nur noch **als gesehene goldene Trophäen** (kein grauer Punkte-Brei). |
 | **v13** | 2026-08-02 | **UNESCO-Welterbe** (1121 Stätten): abhakbare Liste pro Land im Detail-Fenster, Karten-Marker, eigener Zähler, im Sync. |

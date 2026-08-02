@@ -42,9 +42,9 @@ const flagShown = {};     // iso -> true (Flaggenbild schon erzeugt)
 
 /* ---------- Init ---------- */
 Promise.all([
-  fetch('data/countries.json?v=7').then(r => r.json()),
-  fetch('data/countries-50m.json?v=7').then(r => r.json()),
-  fetch('data/territories.json?v=7').then(r => r.json())
+  fetch('data/countries.json?v=8').then(r => r.json()),
+  fetch('data/countries-50m.json?v=8').then(r => r.json()),
+  fetch('data/territories.json?v=8').then(r => r.json())
 ]).then(([countries, topo, territories]) => {
   COUNTRIES = countries;
   TERRITORIES = territories;
@@ -182,37 +182,41 @@ function render() {
   });
 }
 
-/* ---------- Flagge unter dem Land sichtbar machen ---------- */
+/* ---------- Flagge unter dem Land sichtbar machen ----------
+   Die Flagge wird PRO Landmasse (Polygon) separat eingepasst. So zeigt jede Insel /
+   jedes Festland die komplette, unverzerrte Flagge – auch bei weit auseinander
+   liegenden Teilen (USA mit Alaska/Hawaii, Chile mit Osterinsel …). */
 function applyVisitedVisual(iso, animate) {
   const f = features[iso]; if (!f) return;
   if (!flagShown[iso]) {
-    const b = path.bounds(f);
-    const x = b[0][0], y = b[0][1], w = b[1][0] - x, h = b[1][1] - y;
-    defs.append('clipPath').attr('id', 'cp-' + iso).append('path').attr('d', path(f));
-    gFlags.append('image').attr('class', 'flag-img')
-      .attr('href', FLAG(iso)).attr('x', x).attr('y', y).attr('width', w).attr('height', h)
-      .attr('preserveAspectRatio', 'xMidYMid slice')
-      .attr('clip-path', 'url(#cp-' + iso + ')');
+    const polys = f.geometry.type === 'Polygon' ? [f.geometry.coordinates] : f.geometry.coordinates;
+    const added = [];
+    polys.forEach((poly, idx) => {
+      const geom = { type: 'Polygon', coordinates: poly };
+      const b = path.bounds(geom);
+      const x = b[0][0], y = b[0][1], w = b[1][0] - x, h = b[1][1] - y;
+      if (!(w > 0.8 && h > 0.8)) return;             // sub-pixel-Inseln überspringen
+      const cid = 'cp-' + iso + '-' + idx;
+      defs.append('clipPath').attr('id', cid).append('path').attr('d', path(geom));
+      const img = gFlags.append('image').attr('class', 'flag-img').attr('data-iso', iso)
+        .attr('href', FLAG(iso)).attr('x', x).attr('y', y).attr('width', w).attr('height', h)
+        .attr('preserveAspectRatio', 'xMidYMid slice')
+        .attr('clip-path', 'url(#' + cid + ')');
+      added.push(img);
+    });
     flagShown[iso] = true;
+    if (animate) added.forEach(im => im.style('opacity', 0.2).transition().duration(500).style('opacity', 1));
   }
   const cover = coverEl[iso], border = borderEl[iso];
   if (cover) cover.classList.add('visited');
   if (border) border.classList.add('visited-b');
-  if (animate) {
-    // kleiner „Aufleucht"-Effekt
-    const f2 = gFlags.select('image:last-child');
-    f2.style('opacity', 0.2).transition().duration(500).style('opacity', 1);
-  }
 }
 function removeVisitedVisual(iso) {
   const cover = coverEl[iso], border = borderEl[iso];
   if (cover) cover.classList.remove('visited');
   if (border) border.classList.remove('visited-b');
-  const img = gFlags.selectAll('image').filter(function () {
-    return this.getAttribute('clip-path') === 'url(#cp-' + iso + ')';
-  });
-  img.remove();
-  defs.select('#cp-' + iso).remove();
+  gFlags.selectAll('image').filter(function () { return this.getAttribute('data-iso') === iso; }).remove();
+  defs.selectAll('clipPath').filter(function () { return this.id.indexOf('cp-' + iso + '-') === 0; }).remove();
   flagShown[iso] = false;
 }
 

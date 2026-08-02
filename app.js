@@ -42,9 +42,9 @@ const flagShown = {};     // iso -> true (Flaggenbild schon erzeugt)
 
 /* ---------- Init ---------- */
 Promise.all([
-  fetch('data/countries.json?v=8').then(r => r.json()),
-  fetch('data/countries-50m.json?v=8').then(r => r.json()),
-  fetch('data/territories.json?v=8').then(r => r.json())
+  fetch('data/countries.json?v=9').then(r => r.json()),
+  fetch('data/countries-50m.json?v=9').then(r => r.json()),
+  fetch('data/territories.json?v=9').then(r => r.json())
 ]).then(([countries, topo, territories]) => {
   COUNTRIES = countries;
   TERRITORIES = territories;
@@ -124,7 +124,11 @@ function setupSvg() {
   gPoles   = viewport.append('g');
 
   zoom = d3.zoom().scaleExtent([1, 14])
-    .on('zoom', (e) => { viewport.attr('transform', e.transform); curK = e.transform.k; })
+    .on('zoom', (e) => {
+      viewport.attr('transform', e.transform); curK = e.transform.k;
+      // Hauptstadt-Punkte gegen-skalieren -> konstante Bildschirmgröße statt Riesenblasen
+      gPoles.selectAll('.capmark').attr('transform', d => `translate(${d.x},${d.y}) scale(${1 / curK})`);
+    })
     .on('start', () => svgEl.classList.add('grabbing'))
     .on('end', () => svgEl.classList.remove('grabbing'));
   svg.call(zoom).on('dblclick.zoom', null);
@@ -198,8 +202,9 @@ function applyVisitedVisual(iso, animate) {
       if (!(w > 0.8 && h > 0.8)) return;             // sub-pixel-Inseln überspringen
       const cid = 'cp-' + iso + '-' + idx;
       defs.append('clipPath').attr('id', cid).append('path').attr('d', path(geom));
+      // PNG (nicht SVG): iOS-Safari füllt <image>+SVG mit "slice" nur teilweise
       const img = gFlags.append('image').attr('class', 'flag-img').attr('data-iso', iso)
-        .attr('href', FLAG(iso)).attr('x', x).attr('y', y).attr('width', w).attr('height', h)
+        .attr('href', FLAG(iso, 'w1280')).attr('x', x).attr('y', y).attr('width', w).attr('height', h)
         .attr('preserveAspectRatio', 'xMidYMid slice')
         .attr('clip-path', 'url(#' + cid + ')');
       added.push(img);
@@ -225,7 +230,8 @@ function drawCapital(iso) {
   const c = byIso[iso]; if (!c || c.clat == null || !projection) return;
   const p = projection([c.clng, c.clat]); if (!p || isNaN(p[0])) return;
   const g = gPoles.append('g').attr('class', 'capmark').attr('data-iso', iso)
-    .attr('transform', `translate(${p[0]},${p[1]})`);
+    .datum({ x: p[0], y: p[1] })
+    .attr('transform', `translate(${p[0]},${p[1]}) scale(${1 / curK})`);
   g.append('circle').attr('class', 'halo').attr('r', 4);
   g.append('circle').attr('class', 'dot').attr('r', 1.8);
 }

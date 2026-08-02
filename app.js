@@ -17,6 +17,14 @@ function save() {
   localStorage.setItem(LS_KEY, JSON.stringify(state));
   if (window.RubbelSync) window.RubbelSync.push(state);   // Hook für spätere Cloud-Sync
 }
+// Entfernt verwaiste Welterbe-Schlüssel (z. B. vom früheren ID-Schema). true = etwas entfernt.
+function pruneHeritage() {
+  let changed = false;
+  Object.keys(state.heritage || {}).forEach(id => {
+    if (!heritageById[id]) { delete state.heritage[id]; changed = true; }
+  });
+  return changed;
+}
 
 /* ---------- Daten ---------- */
 let COUNTRIES = [];       // die 195 UN-Länder
@@ -46,10 +54,10 @@ const flagShown = {};     // iso -> true (Flaggenbild schon erzeugt)
 
 /* ---------- Init ---------- */
 Promise.all([
-  fetch('data/countries.json?v=15').then(r => r.json()),
-  fetch('data/countries-50m.json?v=15').then(r => r.json()),
-  fetch('data/territories.json?v=15').then(r => r.json()),
-  fetch('data/heritage.json?v=15').then(r => r.json())
+  fetch('data/countries.json?v=16').then(r => r.json()),
+  fetch('data/countries-50m.json?v=16').then(r => r.json()),
+  fetch('data/territories.json?v=16').then(r => r.json()),
+  fetch('data/heritage.json?v=16').then(r => r.json())
 ]).then(([countries, topo, territories, heritage]) => {
   COUNTRIES = countries;
   TERRITORIES = territories.sort((a, b) => a.name.localeCompare(b.name, 'de'));  // Extra-Gebiete alphabetisch
@@ -59,6 +67,7 @@ Promise.all([
     heritageById[h.id] = h;
     h.iso.forEach(code => { (heritageByIso[code] = heritageByIso[code] || []).push(h); });
   });
+  const prunedAtLoad = pruneHeritage();   // verwaiste Welterbe-Schlüssel entfernen
   COUNTRY_SET = new Set(COUNTRIES.map(c => c.iso2));
   TERR_SET = new Set(TERRITORIES.map(c => c.iso2));
   ALL.forEach(c => { byIso[c.iso2] = c; if (c.num) byNum[c.num] = c; });
@@ -130,6 +139,8 @@ Promise.all([
 
   document.getElementById('loading').style.display = 'none';
   if (window.RubbelSync) window.RubbelSync.init();   // Cloud-Sync starten (falls eingerichtet)
+  // Bereinigung persistieren (bei Sync erledigt das applyState nach dem Pull)
+  if (prunedAtLoad && !(window.RubbelSync && window.RubbelSync.hasCode && window.RubbelSync.hasCode())) save();
   // Handy: gleich bei Deutschland starten
   if (window.innerWidth < 900) setTimeout(() => flyTo('de', 3.2, 0), 300);
   setTimeout(() => { const h = document.getElementById('hint'); if (h) h.style.opacity = '0'; }, 6000);
@@ -624,7 +635,8 @@ window.Rubbel = {
   applyState: (remote) => {
     if (!remote) return;
     state = { visited: remote.visited || {}, capitals: remote.capitals || {}, heritage: remote.heritage || {} };
-    localStorage.setItem(LS_KEY, JSON.stringify(state));   // lokal spiegeln, ohne erneuten Push
+    if (pruneHeritage()) save();   // verwaiste Welterbe-Schlüssel auch aus dem Sync entfernen
+    else localStorage.setItem(LS_KEY, JSON.stringify(state));   // lokal spiegeln, ohne erneuten Push
     if (projection) render();
     refreshCounters(); syncAllGrid();
     if (detailIso) { syncDetail(detailIso); buildHeritageList(detailIso); }

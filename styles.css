@@ -173,8 +173,15 @@ body{
 .wh-row{display:flex; align-items:center; gap:9px; padding:8px; border-radius:9px; cursor:pointer; transition:background .12s}
 .wh-row:hover{background:#0f1c2b}
 .wh-check{flex:none; width:18px; height:18px; border-radius:6px; border:1.5px solid #33465c; background:#0c1826; position:relative; transition:.15s}
-.wh-row.on .wh-check{background:linear-gradient(180deg,var(--gold),var(--gold-d)); border-color:var(--gold)}
-.wh-row.on .wh-check::after{content:"✓"; position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:#241a05; font-size:12px; font-weight:800}
+.wh-row.on .wh-check,.wh-sr.on .wh-check{background:linear-gradient(180deg,var(--gold),var(--gold-d)); border-color:var(--gold)}
+.wh-row.on .wh-check::after,.wh-sr.on .wh-check::after{content:"✓"; position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:#241a05; font-size:12px; font-weight:800}
+/* Welterbe-Treffer in der unteren Suche */
+.wh-sr{grid-column:1/-1; display:flex; align-items:center; gap:9px; padding:9px 8px; border-radius:9px; cursor:pointer; transition:background .12s}
+.wh-sr:hover{background:#0f1c2b}
+.wh-sr .wh-name{flex:1 1 0; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-size:13.5px; color:var(--muted)}
+.wh-sr.on .wh-name{color:var(--ink)}
+.wh-sr .wh-land{flex:none; max-width:38%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  font-size:11px; color:var(--muted); background:#111d2b; border:1px solid #223347; padding:2px 8px; border-radius:20px}
 .wh-cat{flex:none; font-size:13px}
 .wh-name{font-size:13.5px; color:var(--muted); line-height:1.25}
 .wh-row.on .wh-name{color:var(--ink)}

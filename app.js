@@ -54,10 +54,10 @@ const flagShown = {};     // iso -> true (Flaggenbild schon erzeugt)
 
 /* ---------- Init ---------- */
 Promise.all([
-  fetch('data/countries.json?v=16').then(r => r.json()),
-  fetch('data/countries-50m.json?v=16').then(r => r.json()),
-  fetch('data/territories.json?v=16').then(r => r.json()),
-  fetch('data/heritage.json?v=16').then(r => r.json())
+  fetch('data/countries.json?v=17').then(r => r.json()),
+  fetch('data/countries-50m.json?v=17').then(r => r.json()),
+  fetch('data/territories.json?v=17').then(r => r.json()),
+  fetch('data/heritage.json?v=17').then(r => r.json())
 ]).then(([countries, topo, territories, heritage]) => {
   COUNTRIES = countries;
   TERRITORIES = territories.sort((a, b) => a.name.localeCompare(b.name, 'de'));  // Extra-Gebiete alphabetisch
@@ -576,6 +576,11 @@ function syncAllGrid() { ALL.forEach(c => syncGridCell(c.iso2)); }
 // Suche + Filter
 let curFilter = 'all', curQuery = '';
 document.getElementById('search').addEventListener('input', (e) => { curQuery = e.target.value.trim().toLowerCase(); applyGridFilter(); });
+grid.addEventListener('click', (e) => {   // Welterbe-Suchtreffer direkt abhaken
+  const row = e.target.closest('.wh-sr'); if (!row) return;
+  toggleHeritage(row.dataset.hid);
+  row.classList.toggle('on', !!state.heritage[row.dataset.hid]);
+});
 document.querySelector('.seg').addEventListener('click', (e) => {
   const b = e.target.closest('button'); if (!b) return;
   document.querySelectorAll('.seg button').forEach(x => x.classList.remove('active'));
@@ -594,7 +599,35 @@ function applyGridFilter() {
   });
   const sec = document.getElementById('grid-section-terr');
   if (sec) sec.style.display = terrVisible ? '' : 'none';
+  renderHeritageSearch();
   grid.scrollTop = 0;   // nach Filterwechsel oben starten (sonst hängt man bei wenig Treffern im Leeren)
+}
+// Welterbe-Treffer in die Such-Ergebnisse einblenden (direkt abhakbar)
+function renderHeritageSearch() {
+  grid.querySelectorAll('.wh-sr, .wh-sr-head').forEach(el => el.remove());
+  if (!curQuery || curQuery.length < 2 || curFilter === 'visited' || curFilter === 'open') return;
+  const matches = HERITAGE.filter(h => h.name.toLowerCase().includes(curQuery))
+    .sort((a, b) => a.name.localeCompare(b.name, 'de'));
+  if (!matches.length) return;
+  const head = document.createElement('div');
+  head.className = 'grid-section wh-sr-head';
+  head.textContent = `🏛️ Welterbe (${matches.length})`;
+  grid.appendChild(head);
+  matches.slice(0, 80).forEach(h => {
+    const row = document.createElement('div');
+    row.className = 'wh-sr' + (state.heritage[h.id] ? ' on' : '');
+    row.dataset.hid = h.id;
+    const land = byIso[h.iso[0]] ? byIso[h.iso[0]].name : '';
+    row.innerHTML = `<span class="wh-check"></span><span class="wh-cat">${whCatIcon(h.cat)}</span>` +
+      `<span class="wh-name">${escapeHtml(h.name)}</span><span class="wh-land">${escapeHtml(land)}</span>`;
+    grid.appendChild(row);
+  });
+  if (matches.length > 80) {
+    const more = document.createElement('div');
+    more.className = 'grid-section wh-sr-head'; more.style.borderTop = 'none';
+    more.textContent = `… und ${matches.length - 80} weitere – bitte genauer suchen`;
+    grid.appendChild(more);
+  }
 }
 
 /* ---------- Zähler ---------- */

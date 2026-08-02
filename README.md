@@ -101,6 +101,7 @@ Die Karten-Assets sind mit `?v=N` versioniert; die Nummer entspricht den Einträ
 
 | Version | Datum | Änderungen |
 |--------:|-------|------------|
+| **v15** | 2026-08-02 | **Anklickbare Zähler-Chips**: Übersichts-Fenster pro Kategorie (Länder / Hauptstädte / Extra-Gebiete / Welterbe) mit Sprung zum Land · Fix: Flaggen-Filter „Besucht" scrollt jetzt. |
 | **v14** | 2026-08-02 | Welterbe-Namen **komplett auf Deutsch** (966 aus Wikidata über die offizielle WHS-Nummer, 155 manuell) · Karte zeigt Welterbe nur noch **als gesehene goldene Trophäen** (kein grauer Punkte-Brei). |
 | **v13** | 2026-08-02 | **UNESCO-Welterbe** (1121 Stätten): abhakbare Liste pro Land im Detail-Fenster, Karten-Marker, eigener Zähler, im Sync. |
 | **v12** | 2026-08-02 | **Kartenform-Umschalter** 🗺️/🌐: Globus (Natural Earth) ↔ flache Karte (Equirectangular, volle Breite). Wahl pro Gerät gespeichert. |

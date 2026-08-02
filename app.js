@@ -36,15 +36,16 @@ const svg = d3.select(svgEl);
 let W = 0, H = 0, projection, path, zoom, viewport;
 let gOcean, gGrat, gOther, gFlags, gCovers, gBorders, gPoles, defs;
 let curK = 1;
+let flatMode = localStorage.getItem('rw_flat') === '1';   // flache Karte statt Globus-Look
 const coverEl = {};       // iso -> <path.cover>
 const borderEl = {};      // iso -> <path.border>
 const flagShown = {};     // iso -> true (Flaggenbild schon erzeugt)
 
 /* ---------- Init ---------- */
 Promise.all([
-  fetch('data/countries.json?v=11').then(r => r.json()),
-  fetch('data/countries-50m.json?v=11').then(r => r.json()),
-  fetch('data/territories.json?v=11').then(r => r.json())
+  fetch('data/countries.json?v=12').then(r => r.json()),
+  fetch('data/countries-50m.json?v=12').then(r => r.json()),
+  fetch('data/territories.json?v=12').then(r => r.json())
 ]).then(([countries, topo, territories]) => {
   COUNTRIES = countries;
   TERRITORIES = territories.sort((a, b) => a.name.localeCompare(b.name, 'de'));  // Extra-Gebiete alphabetisch
@@ -150,23 +151,45 @@ function setupSvg() {
     .on('end', () => svgEl.classList.remove('grabbing'));
   svg.call(zoom).on('dblclick.zoom', null);
 
-  // Zoom-Buttons
+  // Zoom-Buttons + Kartenform-Umschalter
   document.querySelector('.map-ctrl').addEventListener('click', (e) => {
     const b = e.target.closest('button'); if (!b) return;
+    if (b.dataset.proj !== undefined) { toggleProjection(); return; }
     const kind = b.dataset.zoom;
     if (kind === 'reset') svg.transition().duration(600).call(zoom.transform, d3.zoomIdentity);
     else svg.transition().duration(250).call(zoom.scaleBy, kind === 'in' ? 1.6 : 1 / 1.6);
   });
+  updateProjBtn();
 
   buildPressRing();
   window.addEventListener('resize', debounce(() => { render(); }, 200));
+}
+
+function toggleProjection() {
+  flatMode = !flatMode;
+  localStorage.setItem('rw_flat', flatMode ? '1' : '0');
+  svg.call(zoom.transform, d3.zoomIdentity);   // Zoom zurücksetzen (curK -> 1)
+  render();
+  updateProjBtn();
+  toast(flatMode ? 'Flache Karte' : 'Globus-Ansicht');
+}
+function updateProjBtn() {
+  const b = document.querySelector('.map-ctrl [data-proj]');
+  if (b) { b.textContent = flatMode ? '🌐' : '🗺️'; b.title = flatMode ? 'Zur Globus-Ansicht' : 'Zur flachen Karte'; }
 }
 
 function resize() {
   const r = wrap.getBoundingClientRect();
   W = r.width; H = r.height;
   svg.attr('viewBox', `0 0 ${W} ${H}`).attr('width', W).attr('height', H);
-  projection = d3.geoNaturalEarth1().fitExtent([[6, 6], [W - 6, H - 6]], { type: 'Sphere' });
+  if (flatMode) {
+    projection = d3.geoEquirectangular().fitWidth(W, { type: 'Sphere' });   // volle Breite
+    const b = d3.geoPath(projection).bounds({ type: 'Sphere' });
+    const t = projection.translate();
+    projection.translate([t[0], t[1] + (H / 2 - (b[0][1] + b[1][1]) / 2)]);  // vertikal zentrieren
+  } else {
+    projection = d3.geoNaturalEarth1().fitExtent([[6, 6], [W - 6, H - 6]], { type: 'Sphere' });
+  }
   path = d3.geoPath(projection);
 }
 

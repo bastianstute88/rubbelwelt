@@ -42,9 +42,9 @@ const flagShown = {};     // iso -> true (Flaggenbild schon erzeugt)
 
 /* ---------- Init ---------- */
 Promise.all([
-  fetch('data/countries.json?v=10').then(r => r.json()),
-  fetch('data/countries-50m.json?v=10').then(r => r.json()),
-  fetch('data/territories.json?v=10').then(r => r.json())
+  fetch('data/countries.json?v=11').then(r => r.json()),
+  fetch('data/countries-50m.json?v=11').then(r => r.json()),
+  fetch('data/territories.json?v=11').then(r => r.json())
 ]).then(([countries, topo, territories]) => {
   COUNTRIES = countries;
   TERRITORIES = territories.sort((a, b) => a.name.localeCompare(b.name, 'de'));  // Extra-Gebiete alphabetisch
@@ -249,10 +249,12 @@ function drawCapMarker(iso) {
   const g = gPoles.append('g').attr('class', 'capmark' + (state.capitals[iso] ? ' on' : '')).attr('data-iso', iso)
     .datum({ x: p[0], y: p[1] })
     .attr('transform', `translate(${p[0]},${p[1]}) scale(${1 / curK})`);
-  g.append('circle').attr('class', 'halo').attr('r', 4);
-  g.append('circle').attr('class', 'dot').attr('r', 1.7);
+  g.append('circle').attr('class', 'halo').attr('r', 3.6);
+  g.append('circle').attr('class', 'dot').attr('r', state.capitals[iso] ? 1.7 : 1.25);
 }
 function setCapMarker(iso, on) {
+  gPoles.selectAll('.capmark').filter(function () { return this.getAttribute('data-iso') === iso; })
+    .select('.dot').attr('r', on ? 1.7 : 1.25);
   gPoles.selectAll('.capmark').filter(function () { return this.getAttribute('data-iso') === iso; }).classed('on', !!on);
 }
 

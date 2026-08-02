@@ -42,12 +42,12 @@ const flagShown = {};     // iso -> true (Flaggenbild schon erzeugt)
 
 /* ---------- Init ---------- */
 Promise.all([
-  fetch('data/countries.json?v=9').then(r => r.json()),
-  fetch('data/countries-50m.json?v=9').then(r => r.json()),
-  fetch('data/territories.json?v=9').then(r => r.json())
+  fetch('data/countries.json?v=10').then(r => r.json()),
+  fetch('data/countries-50m.json?v=10').then(r => r.json()),
+  fetch('data/territories.json?v=10').then(r => r.json())
 ]).then(([countries, topo, territories]) => {
   COUNTRIES = countries;
-  TERRITORIES = territories;
+  TERRITORIES = territories.sort((a, b) => a.name.localeCompare(b.name, 'de'));  // Extra-Gebiete alphabetisch
   ALL = COUNTRIES.concat(TERRITORIES);
   COUNTRY_SET = new Set(COUNTRIES.map(c => c.iso2));
   TERR_SET = new Set(TERRITORIES.map(c => c.iso2));
@@ -95,6 +95,23 @@ Promise.all([
     } else otherKept.push(f);
   });
   window.__other = otherKept;
+
+  // Französische Übersee-Départements aus dem Frankreich-Umriss herauslösen (eigene Extra-Gebiete)
+  const dom = TERRITORIES.filter(t => t.splitFrom);
+  [...new Set(dom.map(t => t.splitFrom))].forEach(piso => {
+    const pf = features[piso]; if (!pf) return;
+    const kids = dom.filter(t => t.splitFrom === piso);
+    const polys = pf.geometry.type === 'Polygon' ? [pf.geometry.coordinates] : pf.geometry.coordinates;
+    const keep = [], buckets = {};
+    polys.forEach(poly => {
+      const cen = d3.geoCentroid({ type: 'Polygon', coordinates: poly });
+      let best = null, bestD = 0.25;   // Radius ~1600 km um die Départements-Koordinate
+      kids.forEach(t => { const dd = d3.geoDistance(cen, [t.clng, t.clat]); if (dd < bestD) { bestD = dd; best = t; } });
+      if (best) (buckets[best.iso2] = buckets[best.iso2] || []).push(poly); else keep.push(poly);
+    });
+    pf.geometry = { type: 'MultiPolygon', coordinates: keep };
+    kids.forEach(t => { if (buckets[t.iso2]) features[t.iso2] = { type: 'Feature', properties: { name: t.name }, geometry: { type: 'MultiPolygon', coordinates: buckets[t.iso2] } }; });
+  });
 
   buildGrid();
   setupSvg();
@@ -182,7 +199,7 @@ function render() {
     borderEl[c.iso2] = border;
     attachPress(cover, c.iso2);
     if (state.visited[c.iso2]) applyVisitedVisual(c.iso2, false);
-    if (state.capitals[c.iso2]) drawCapital(c.iso2);
+    drawCapMarker(c.iso2);   // Hauptstadt-Punkt immer (dunkel, golden wenn besucht)
   });
 }
 
@@ -225,17 +242,19 @@ function removeVisitedVisual(iso) {
   flagShown[iso] = false;
 }
 
-/* ---------- Dezenter Hauptstadt-Marker (goldener Punkt an der echten Hauptstadt) ---------- */
-function drawCapital(iso) {
+/* ---------- Hauptstadt-Marker: immer sichtbar (dunkler Punkt), golden wenn besucht ---------- */
+function drawCapMarker(iso) {
   const c = byIso[iso]; if (!c || c.clat == null || !projection) return;
   const p = projection([c.clng, c.clat]); if (!p || isNaN(p[0])) return;
-  const g = gPoles.append('g').attr('class', 'capmark').attr('data-iso', iso)
+  const g = gPoles.append('g').attr('class', 'capmark' + (state.capitals[iso] ? ' on' : '')).attr('data-iso', iso)
     .datum({ x: p[0], y: p[1] })
     .attr('transform', `translate(${p[0]},${p[1]}) scale(${1 / curK})`);
   g.append('circle').attr('class', 'halo').attr('r', 4);
-  g.append('circle').attr('class', 'dot').attr('r', 1.8);
+  g.append('circle').attr('class', 'dot').attr('r', 1.7);
 }
-function removeCapital(iso) { gPoles.selectAll('.capmark').filter(function () { return this.getAttribute('data-iso') === iso; }).remove(); }
+function setCapMarker(iso, on) {
+  gPoles.selectAll('.capmark').filter(function () { return this.getAttribute('data-iso') === iso; }).classed('on', !!on);
+}
 
 /* ---------- Toggles ---------- */
 function setVisited(iso, on, animate) {
@@ -244,8 +263,9 @@ function setVisited(iso, on, animate) {
   save(); refreshCounters(); syncGridCell(iso); syncDetail(iso);
 }
 function setCapital(iso, on) {
-  if (on) { state.capitals[iso] = true; if (!state.visited[iso]) { state.visited[iso] = true; applyVisitedVisual(iso, true); } drawCapital(iso); }
-  else { delete state.capitals[iso]; removeCapital(iso); }
+  if (on) { state.capitals[iso] = true; if (!state.visited[iso]) { state.visited[iso] = true; applyVisitedVisual(iso, true); } }
+  else { delete state.capitals[iso]; }
+  setCapMarker(iso, on);
   save(); refreshCounters(); syncGridCell(iso); syncDetail(iso);
 }
 

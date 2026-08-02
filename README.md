@@ -16,13 +16,15 @@ Landesflagge leuchtet durch die exakten Grenzen. Dazu sammelst du **Hauptstädte
 - **✨ Extra-Gebiete** (27): bekannte Nicht-UN-Gebiete wie Taiwan, Kosovo, Grönland,
   Hongkong und die französischen Übersee-Départements – separat freirubbelbar und
   getrennt gezählt (nicht in den 195 %).
-- **🏛️ UNESCO-Welterbe** (1121 Stätten): pro Land eine abhakbare Liste im Detail-Fenster
-  (🏛️ Kultur / 🌿 Natur / 🏞️ gemischt) plus Karten-Marker, die beim Reinzoomen
-  erscheinen (grau → golden bei Besuch).
+- **🏛️ UNESCO-Welterbe** (1121 Stätten, **deutsche Namen**): pro Land eine abhakbare Liste
+  im Detail-Fenster (🏛️ Kultur / 🌿 Natur / 🏞️ gemischt). Gesehene Stätten erscheinen als
+  **goldene Marker** auf der Karte (nur die gesehenen, kein Punkte-Brei). Auch über die
+  untere Suche findbar und direkt abhakbar.
 - **Zähler oben:** „X % der Welt" (nur Länder) + separate Zähler für Hauptstädte,
-  Extra-Gebiete und Welterbe.
-- **Flaggen-Leiste** unten (alle Länder + Extra-Gebiete, alphabetisch), Suche & Filter,
-  Klick springt zum Land.
+  Extra-Gebiete und Welterbe. **Anklickbar** → Übersichts-Fenster mit deiner Sammlung
+  (jede Zeile springt zum Land).
+- **Flaggen-Leiste** unten (alle Länder + Extra-Gebiete, alphabetisch), Suche & Filter;
+  die Suche findet auch **Welterbestätten**. Klick springt zum Land.
 - **Detail-Panel** mit Ortszeit und dynamischem „+/- Std zu deiner Zeit".
 - **Kartenform-Umschalter** 🗺️/🌐: Globus-Look (Natural Earth) ↔ flache Karte
   (Equirectangular, volle Breite). Wahl pro Gerät gespeichert.
@@ -65,7 +67,9 @@ build_data.py              erzeugt data/countries.json
 - **Welterbe** (`data/heritage.json`): offizielle UNESCO-Liste (1121 Stätten mit
   Kategorie, ISO-Code, Koordinaten). Quelle ist die offizielle UNESCO-XML, gespiegelt
   über [eprendergast/unesco-api](https://github.com/eprendergast/unesco-api)
-  (`app/data/unesco.xml`), da UNESCO direkt hinter Cloudflare liegt.
+  (`app/data/unesco.xml`), da UNESCO direkt hinter Cloudflare liegt. **id = offizielle
+  WHS-Nummer** (`id_number`). **Deutsche Namen:** 966 aus Wikidata (Label `@de` über die
+  WHS-Nummer P757 gemappt), 155 manuell übersetzt.
 - **Karten-Feinheiten** (in `app.js` zur Laufzeit): bei doppelten Natural-Earth-IDs
   gewinnt die größte Fläche (fixt fehlendes Australien); abtrünnige Gebiete werden ins
   Land verschmolzen (Somaliland→Somalia, Nordzypern→Zypern, Westsahara→Marokko,

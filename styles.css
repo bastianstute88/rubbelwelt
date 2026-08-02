@@ -101,7 +101,7 @@ body{
 .seg button{background:transparent; border:none; color:var(--muted); padding:8px 12px; font-size:13px; cursor:pointer}
 .seg button.active{background:#1d2f43; color:var(--ink)}
 
-#flag-grid{overflow-y:auto; overflow-x:hidden; padding:4px 12px 12px;
+#flag-grid{flex:1 1 auto; min-height:0; overflow-y:auto; overflow-x:hidden; padding:4px 12px 12px;
   display:grid; grid-template-columns:repeat(auto-fill,minmax(58px,1fr)); gap:8px; align-content:start}
 .flag-cell{display:flex; flex-direction:column; align-items:center; gap:4px; cursor:pointer;
   padding:6px 3px; border-radius:10px; transition:background .15s; position:relative}
@@ -202,6 +202,22 @@ body{
   border:none; font-weight:700}
 .btn-primary:hover{filter:brightness(1.06)}
 .btn-primary:disabled{opacity:.4; cursor:not-allowed}
+
+/* ---------- Übersicht (anklickbare Zähler) ---------- */
+.chip{cursor:pointer; transition:border-color .15s, background .15s}
+.chip:hover{border-color:#2c4157; background:#182533}
+.chip.chip-x:hover{border-color:#4a6699}
+.chip.chip-wh:hover{border-color:#7a6330}
+#overview .modal-card{max-width:460px}
+.ov-list{max-height:62vh; overflow-y:auto; -webkit-overflow-scrolling:touch; margin-top:14px; display:flex; flex-direction:column; gap:2px}
+.ov-row{display:flex; align-items:center; gap:11px; padding:9px 8px; border-radius:10px; cursor:pointer; transition:background .12s}
+.ov-row:hover{background:#0f1c2b}
+.ov-flag{width:30px; height:20px; object-fit:cover; border-radius:3px; flex:none; box-shadow:0 1px 2px rgba(0,0,0,.5)}
+.ov-ic{width:30px; text-align:center; flex:none; font-size:16px}
+.ov-txt{min-width:0}
+.ov-name{font-size:14.5px; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.ov-sub{font-size:12px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.ov-empty{color:var(--muted); font-size:14px; padding:14px 4px}
 
 /* ---------- Desktop ---------- */
 @media (min-width:900px){

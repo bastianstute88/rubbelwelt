@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#0b1622">
 <title>Rubbelwelt – eure Weltkarte</title>
 <link rel="preconnect" href="https://flagcdn.com" crossorigin>
-<link rel="stylesheet" href="styles.css?v=14">
+<link rel="stylesheet" href="styles.css?v=15">
 </head>
 <body>
 <div id="app">
@@ -82,14 +82,22 @@
     </div>
   </div>
 
+  <div id="overview" class="modal hidden" aria-hidden="true">
+    <div class="modal-card">
+      <button class="icon-btn modal-close" id="ov-close" aria-label="Schließen">✕</button>
+      <h2 id="ov-title"></h2>
+      <div id="ov-list" class="ov-list"></div>
+    </div>
+  </div>
+
   <div id="toast"></div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/topojson-client@3.1.0/dist/topojson-client.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="config.js?v=14"></script>
-<script src="sync.js?v=14"></script>
-<script src="app.js?v=14"></script>
+<script src="config.js?v=15"></script>
+<script src="sync.js?v=15"></script>
+<script src="app.js?v=15"></script>
 </body>
 </html>

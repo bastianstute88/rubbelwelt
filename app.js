@@ -46,10 +46,10 @@ const flagShown = {};     // iso -> true (Flaggenbild schon erzeugt)
 
 /* ---------- Init ---------- */
 Promise.all([
-  fetch('data/countries.json?v=14').then(r => r.json()),
-  fetch('data/countries-50m.json?v=14').then(r => r.json()),
-  fetch('data/territories.json?v=14').then(r => r.json()),
-  fetch('data/heritage.json?v=14').then(r => r.json())
+  fetch('data/countries.json?v=15').then(r => r.json()),
+  fetch('data/countries-50m.json?v=15').then(r => r.json()),
+  fetch('data/territories.json?v=15').then(r => r.json()),
+  fetch('data/heritage.json?v=15').then(r => r.json())
 ]).then(([countries, topo, territories, heritage]) => {
   COUNTRIES = countries;
   TERRITORIES = territories.sort((a, b) => a.name.localeCompare(b.name, 'de'));  // Extra-Gebiete alphabetisch
@@ -489,6 +489,47 @@ document.getElementById('wh-list').addEventListener('click', (e) => {
   const row = e.target.closest('.wh-row'); if (row) toggleHeritage(row.dataset.hid);
 });
 
+/* ---------- Übersicht pro Zähler (anklickbare Chips) ---------- */
+const overview = document.getElementById('overview');
+function ovRow(iso, name, sub, icon) {
+  const left = icon ? `<span class="ov-ic">${icon}</span>` : `<img class="ov-flag" src="${FLAG(iso, 'w40')}" alt="">`;
+  return `<div class="ov-row" data-iso="${iso}">${left}<div class="ov-txt"><div class="ov-name">${escapeHtml(name)}</div>` +
+    (sub ? `<div class="ov-sub">${escapeHtml(sub)}</div>` : '') + '</div></div>';
+}
+function openOverview(kind) {
+  let rows = [], title = '';
+  const byName = (a, b) => a.name.localeCompare(b.name, 'de');
+  if (kind === 'countries') {
+    const it = COUNTRIES.filter(c => state.visited[c.iso2]).sort(byName);
+    title = `🗺️ Besuchte Länder · ${it.length} / ${TOTAL}`;
+    rows = it.map(c => ovRow(c.iso2, c.name, state.capitals[c.iso2] ? '🚩 Hauptstadt: ' + c.capital : ''));
+  } else if (kind === 'capitals') {
+    const it = COUNTRIES.filter(c => state.capitals[c.iso2]).sort(byName);
+    title = `🚩 Gesehene Hauptstädte · ${it.length} / ${TOTAL}`;
+    rows = it.map(c => ovRow(c.iso2, c.capital, c.name));
+  } else if (kind === 'extra') {
+    const it = TERRITORIES.filter(c => state.visited[c.iso2]).sort(byName);
+    title = `✨ Extra-Gebiete · ${it.length}`;
+    rows = it.map(c => ovRow(c.iso2, c.name, c.region || ''));
+  } else if (kind === 'heritage') {
+    const it = HERITAGE.filter(h => state.heritage[h.id]).sort(byName);
+    title = `🏛️ Gesehene Welterbestätten · ${it.length}`;
+    rows = it.map(h => { const iso = h.iso[0]; return ovRow(iso, h.name, byIso[iso] ? byIso[iso].name : '', whCatIcon(h.cat)); });
+  }
+  document.getElementById('ov-title').textContent = title;
+  document.getElementById('ov-list').innerHTML = rows.length ? rows.join('') : '<div class="ov-empty">Noch nichts markiert – leg los! 🙂</div>';
+  overview.classList.remove('hidden');
+}
+document.getElementById('ov-list').addEventListener('click', (e) => {
+  const row = e.target.closest('.ov-row'); if (!row) return;
+  overview.classList.add('hidden');
+  const iso = row.dataset.iso; flyTo(iso, 3.6); openDetail(iso);
+});
+document.getElementById('ov-close').addEventListener('click', () => overview.classList.add('hidden'));
+overview.addEventListener('click', (e) => { if (e.target === overview) overview.classList.add('hidden'); });
+[['chip-countries', 'countries'], ['chip-capitals', 'capitals'], ['chip-extra', 'extra'], ['chip-wh', 'heritage']]
+  .forEach(([id, kind]) => { const el = document.getElementById(id); if (el) el.addEventListener('click', () => openOverview(kind)); });
+
 /* ---------- Flaggen-Leiste ---------- */
 const grid = document.getElementById('flag-grid');
 const cellEl = {};
@@ -542,6 +583,7 @@ function applyGridFilter() {
   });
   const sec = document.getElementById('grid-section-terr');
   if (sec) sec.style.display = terrVisible ? '' : 'none';
+  grid.scrollTop = 0;   // nach Filterwechsel oben starten (sonst hängt man bei wenig Treffern im Leeren)
 }
 
 /* ---------- Zähler ---------- */
